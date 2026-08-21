@@ -37,3 +37,5 @@ backend/target/
 
 # Misc
 *.log
+
+frontend/package-lock.json

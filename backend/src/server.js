@@ -1,7 +1,11 @@
+// Updated server with auth routes and cookie handling
 import express from 'express';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
+import authRouter from './routes/auth.js';
+import authRefreshRouter from './routes/authRefresh.js';
 
 // Services
 import CityHealthScoreService from './services/CityHealthScoreService.js';
@@ -17,6 +21,11 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
+
+// Auth routes
+app.use('/api/v1/auth', authRouter);
+app.use('/api/v1/auth', authRefreshRouter);
 
 // Basic Routes
 app.get('/api/v1/health', (req, res) => {
