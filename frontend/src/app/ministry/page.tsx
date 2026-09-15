@@ -20,7 +20,7 @@ import { useCivicStore } from '@/store/useCivicStore';
 import { MinistryDirective } from '@/types';
 
 export default function MinistryDashboardPage() {
-  const { ministries, ministryDirectives, departments, cityHealth, currentUser } = useCivicStore();
+  const { ministries, ministryDirectives, departments, cityHealth, currentUser, complaints, addMinistryTrackingUpdate } = useCivicStore();
   
   const [selectedMinistryId, setSelectedMinistryId] = useState(ministries[0]?.id || 'min-mohua');
   const [directivesList, setDirectivesList] = useState<MinistryDirective[]>(ministryDirectives);
@@ -31,6 +31,17 @@ export default function MinistryDashboardPage() {
   const [newDesc, setNewDesc] = useState('');
   const [newPriority, setNewPriority] = useState<'ROUTINE' | 'HIGH_PRIORITY' | 'URGENT_CRISIS'>('HIGH_PRIORITY');
   const [newDeptCode, setNewDeptCode] = useState('ROADS');
+
+  // Tracking update state
+  const [trackingMessages, setTrackingMessages] = useState<Record<string, string>>({});
+
+  const handleUpdateTracking = (complaintId: string) => {
+    const msg = trackingMessages[complaintId];
+    if (!msg?.trim()) return;
+    addMinistryTrackingUpdate(complaintId, msg);
+    setTrackingMessages(prev => ({ ...prev, [complaintId]: '' }));
+    alert('Live tracking update added successfully. Citizen has been notified.');
+  };
 
   const activeMinistry = ministries.find((m) => m.id === selectedMinistryId) || ministries[0];
 
@@ -210,6 +221,58 @@ export default function MinistryDashboardPage() {
               <p className="text-[11px] text-muted-foreground">Authorized Workforce: {dept.workforceCount || 120} personnel</p>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* Citizen Complaints Live Tracking Update */}
+      <div className="bg-card border border-border rounded-2xl p-6 shadow-sm space-y-4">
+        <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
+          <AlertTriangle className="w-5 h-5 text-amber-500" />
+          Active Citizen Complaints Live Tracking Oversight
+        </h2>
+        <p className="text-xs text-muted-foreground">Ministry officials can post direct tracking updates on unresolved public grievances to maintain transparency.</p>
+        
+        <div className="space-y-4 mt-4">
+          {complaints.filter(c => c.status !== 'CITIZEN_VERIFIED').map(complaint => (
+            <div key={complaint.id} className="border border-border rounded-xl p-4 bg-background space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="font-mono text-xs font-bold text-primary">{complaint.complaintNumber}</span>
+                  <h4 className="text-sm font-bold text-foreground mt-0.5">{complaint.title}</h4>
+                </div>
+                <div className="text-right">
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500/10 text-amber-600 border border-amber-500/20">{complaint.status}</span>
+                </div>
+              </div>
+              
+              <div className="text-xs text-muted-foreground flex gap-4">
+                <span>📍 {complaint.city}</span>
+                <span>🔥 Priority: {complaint.priority}</span>
+              </div>
+              
+              <div className="flex items-center gap-2 pt-2 border-t border-border">
+                <input 
+                  type="text" 
+                  placeholder="Enter official ministry update (e.g. 'Funds released for repair, expected completion in 2 days')" 
+                  value={trackingMessages[complaint.id] || ''}
+                  onChange={(e) => setTrackingMessages(prev => ({ ...prev, [complaint.id]: e.target.value }))}
+                  className="flex-1 bg-muted/50 border border-input rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+                />
+                <button 
+                  onClick={() => handleUpdateTracking(complaint.id)}
+                  disabled={!trackingMessages[complaint.id]?.trim()}
+                  className="bg-primary text-primary-foreground px-4 py-2 rounded-lg text-xs font-bold disabled:opacity-50 transition-opacity"
+                >
+                  Post Update
+                </button>
+              </div>
+            </div>
+          ))}
+          {complaints.filter(c => c.status !== 'CITIZEN_VERIFIED').length === 0 && (
+            <div className="text-center p-6 text-muted-foreground text-sm border border-dashed border-border rounded-xl">
+              No active citizen complaints require tracking updates.
+            </div>
+          )}
         </div>
       </div>
 

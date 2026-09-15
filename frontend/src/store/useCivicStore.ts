@@ -501,6 +501,7 @@ interface CivicState {
   addVerificationRecord: (rec: DigiLockerVerificationRecord) => void;
   verifyComplaint: (complaintId: string, departmentId?: string) => void;
   assignComplaint: (complaintId: string, workerId: string, notes?: string) => void;
+  addMinistryTrackingUpdate: (complaintId: string, message: string) => void;
 }
 
 export const useCivicStore = create<CivicState>((set, get) => ({
@@ -1041,5 +1042,28 @@ export const useCivicStore = create<CivicState>((set, get) => ({
   assignComplaint: (complaintId, workerId, notes) => {
     get().assignWorker(complaintId, workerId, notes);
   },
-}));
 
+  // Ministry portal: add live tracking update
+  addMinistryTrackingUpdate: (complaintId, message) => {
+    const state = get();
+    const currentComplaint = state.complaints.find(c => c.id === complaintId);
+    if (!currentComplaint) return;
+    
+    set((s) => ({
+      history: [
+        ...s.history,
+        {
+          id: `h-${Date.now()}`,
+          complaintId,
+          fromStatus: currentComplaint.status,
+          toStatus: currentComplaint.status,
+          changedBy: state.currentUser.id,
+          changedByName: `${state.currentUser.firstName} ${state.currentUser.lastName}`,
+          changedByRole: 'MINISTRY',
+          notes: message,
+          createdAt: new Date().toISOString(),
+        },
+      ],
+    }));
+  }
+}));
