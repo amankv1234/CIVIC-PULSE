@@ -499,6 +499,8 @@ interface CivicState {
   setDeptFilter: (deptId: string | null) => void;
   setStatusFilter: (status: string | null) => void;
   addVerificationRecord: (rec: DigiLockerVerificationRecord) => void;
+  verifyComplaint: (complaintId: string, departmentId?: string) => void;
+  assignComplaint: (complaintId: string, workerId: string, notes?: string) => void;
 }
 
 export const useCivicStore = create<CivicState>((set, get) => ({
@@ -1003,4 +1005,41 @@ export const useCivicStore = create<CivicState>((set, get) => ({
       verifications: [rec, ...state.verifications],
     }));
   },
+
+  // Official portal: verify a submitted complaint
+  verifyComplaint: (complaintId, departmentId) => {
+    const state = get();
+    set((s) => ({
+      complaints: s.complaints.map((c) =>
+        c.id === complaintId
+          ? {
+              ...c,
+              status: 'VERIFIED' as ComplaintStatus,
+              departmentId: departmentId || c.departmentId,
+              updatedAt: new Date().toISOString(),
+            }
+          : c
+      ),
+      history: [
+        ...s.history,
+        {
+          id: `h-${Date.now()}`,
+          complaintId,
+          fromStatus: 'REPORT_SUBMITTED' as ComplaintStatus,
+          toStatus: 'VERIFIED' as ComplaintStatus,
+          changedBy: state.currentUser.id,
+          changedByName: `${state.currentUser.firstName} ${state.currentUser.lastName}`,
+          changedByRole: state.currentUser.role,
+          notes: 'Complaint verified and routed to relevant department.',
+          createdAt: new Date().toISOString(),
+        },
+      ],
+    }));
+  },
+
+  // Official portal: assign complaint to a field worker (alias of assignWorker)
+  assignComplaint: (complaintId, workerId, notes) => {
+    get().assignWorker(complaintId, workerId, notes);
+  },
 }));
+
